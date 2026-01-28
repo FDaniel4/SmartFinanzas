@@ -1,0 +1,179 @@
+﻿@page "/movimientos"
+@using SmartFinanzas.Modelos
+@inject GestorMovimientos Gestor
+@rendermode InteractiveServer
+
+<h3>Movimientos</h3>
+
+<div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1050;">
+
+    @* --- TOAST DE ÉXITO --- *@
+    @if (!string.IsNullOrEmpty(mensajeOk))
+    {
+        <div class="toast show align-items-center text-white bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fs-6">
+                    <i class="bi bi-check-circle-fill me-2"></i> @mensajeOk
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="() => mensajeOk = null" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+
+    @* --- TOAST DE ERROR --- *@
+    @if (!string.IsNullOrEmpty(mensajeError))
+    {
+        <div class="toast show align-items-center text-white bg-danger border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="d-flex">
+                <div class="toast-body fs-6">
+                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @mensajeError
+                </div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="() => mensajeError = null" aria-label="Close"></button>
+            </div>
+        </div>
+    }
+
+    @* --- TOAST DE SALDO (INFO) --- *@
+    @if (!string.IsNullOrEmpty(mensajeSaldo))
+    {
+        <div class="toast show border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast-header bg-primary text-white">
+                <i class="bi bi-wallet2 me-2"></i>
+                <strong class="me-auto">@mensajeSaldo</strong>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => mensajeSaldo = null" aria-label="Close"></button>
+            </div>
+            <div class="toast-body bg-light text-dark">
+                <div class="d-flex justify-content-between"><span>Gastos:</span> <strong>@Gestor.TotalGastos()</strong></div>
+                <div class="d-flex justify-content-between"><span>Ingresos:</span> <strong>@Gestor.TotalIngresos()</strong></div>
+                <hr class="my-1">
+                <div class="d-flex justify-content-between text-primary"><span>Total Saldo:</span> <strong>@Gestor.Saldo()</strong></div>
+            </div>
+        </div>
+    }
+
+</div>
+
+<div class="card">
+    <div class="card-header">
+        <h4>Registro de movimientos</h4>
+    </div>
+    <div class="card-body">
+        <label class="form-label m-0">Concepto</label>
+        <input type="text" class="form-control mb-2" @bind-value=nuevoMovimiento.Concepto />
+
+        <label class="form-label m-0">Monto</label>
+        <input type="number" class="form-control mb-2" @bind-value=nuevoMovimiento.Monto />
+
+        <label class="form-label m-0">Tipo</label>
+        <select class="form-select mb-2" @bind=nuevoMovimiento.Tipo>
+            <option value="Ingreso">Ingreso</option>
+            <option value="Gasto">Gasto</option>
+        </select>
+
+        <button class="btn btn-primary" @onclick="Agregar">
+            Agregar
+        </button>
+    </div>
+</div>
+<hr />
+@if (movimientos.Count == 0)
+{
+    <p>Aun no hay movimientos registrados</p>
+}
+else
+{
+    <table class="table table-responsive table-striped">
+        <thead>
+            <tr>
+                <th scope="col">Id</th>
+                <th scope="col">Concepto</th>
+                <th scope="col">Monto</th>
+                <th scope="col">Tipo</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach(var mov in movimientos)
+            {   
+                <tr>
+                    <td scope="row">@mov.Id</td>
+                    <td>@mov.Concepto</td>
+                    <td>@mov.Monto</td>
+                    <td>@mov.Tipo</td>
+                </tr>
+            }
+            </tbody>
+    </table>
+    <button class="btn btn-info" @onclick='async () => await MostrarSaldo("Balance Actual")'>
+        Ver mi Saldo
+    </button>
+}
+
+@code {
+    private List<Movimiento> movimientos = new();
+    private Movimiento nuevoMovimiento = new();
+    private string? mensajeError = null;
+    private string? mensajeOk = null;
+    private string? mensajeSaldo = null;
+
+    protected override void OnInitialized()
+    {
+        // Cargar la lista al iniciar la página para ver lo que tiene el servicio
+        movimientos = Gestor.ObtenerTodos();
+    }
+    private async Task Agregar()
+    {
+        if(string.IsNullOrWhiteSpace(nuevoMovimiento.Concepto))
+        {
+            await MostrarError("Escriba un concepto para la operación");
+            return;
+        }
+        if (nuevoMovimiento.Monto <= 0)
+        {
+            await MostrarError("Ingrese un monto valido");
+            return;
+        }
+        var movimiento = new Movimiento
+            {
+                Id = movimientos.Count + 1,
+                Concepto = nuevoMovimiento.Concepto,
+                Monto = nuevoMovimiento.Monto,
+                Tipo = nuevoMovimiento.Tipo
+            };
+        Gestor.Agregar(movimiento);
+        movimientos = Gestor.ObtenerTodos();
+        await MostrarExito("Movimiento agregado correctamente");
+        nuevoMovimiento = new();
+    }
+    private async Task MostrarExito(string mensaje)
+    {
+        mensajeOk = mensaje;
+        StateHasChanged(); 
+        
+        await Task.Delay(3000);
+        
+        mensajeOk = null; 
+        StateHasChanged();
+    }
+
+    private async Task MostrarError(string mensaje)
+    {
+        mensajeError = mensaje;
+        StateHasChanged();
+        
+        await Task.Delay(5000); 
+        
+        mensajeError = null;
+        StateHasChanged();
+    }
+
+    private async Task MostrarSaldo(string titulo)
+    {
+        mensajeSaldo = titulo;
+        StateHasChanged();
+        
+        await Task.Delay(7000);
+        
+        mensajeSaldo = null;
+        StateHasChanged();
+    }
+}
