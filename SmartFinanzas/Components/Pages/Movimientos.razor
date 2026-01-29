@@ -55,7 +55,7 @@
 
 <div class="card">
     <div class="card-header">
-        <h4>Registro de movimientos</h4>
+        <h4>@(editando ? "Modificar movimiento" : "Registrar movimiento")</h4>
     </div>
     <div class="card-body">
         <label class="form-label m-0">Concepto</label>
@@ -71,7 +71,7 @@
         </select>
 
         <button class="btn btn-primary" @onclick="Agregar">
-            Agregar
+            @(editando ? "Guardar" : "Registrar")
         </button>
     </div>
 </div>
@@ -89,6 +89,8 @@ else
                 <th scope="col">Concepto</th>
                 <th scope="col">Monto</th>
                 <th scope="col">Tipo</th>
+                <th scope="col">Acciones</th>
+
             </tr>
         </thead>
         <tbody>
@@ -99,6 +101,11 @@ else
                     <td>@mov.Concepto</td>
                     <td>@mov.Monto</td>
                     <td>@mov.Tipo</td>
+                    <td>
+                        <div class="d-flex gap-2"><button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(mov)"><i class="bi bi-trash"></i></button>
+                            <button class="btn btn-sm btn-warning" @onclick="() => Editar(mov)"><i class="bi bi-pencil-square"></i></button>
+                        </div>
+                    </td>
                 </tr>
             }
             </tbody>
@@ -106,6 +113,41 @@ else
     <button class="btn btn-info" @onclick='async () => await MostrarSaldo("Balance Actual")'>
         Ver mi Saldo
     </button>
+
+    @if (mostrarConfirmacion)
+    {
+        <div class="modal fade show d-block" tabindex="-1">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content shadow">
+                    <div class="modal-header bg-danger text-white">
+                        <h5 class="modal-title">Confirmar eliminación</h5>
+                    </div>
+
+                    <div class="modal-body">
+                        <p>
+                            ¿Seguro que deseas eliminar el movimiento
+                            <strong>@movimientoAEliminar?.Concepto</strong>?
+                        </p>
+                    </div>
+
+                    <div class="modal-footer">
+                        <button class="btn btn-secondary"
+                                @onclick="CancelarEliminar">
+                            Cancelar
+                        </button>
+
+                        <button class="btn btn-danger"
+                                @onclick="EliminarConfirmado">
+                            Sí, eliminar
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal-backdrop fade show"></div>
+    }
+
 }
 
 @code {
@@ -114,6 +156,10 @@ else
     private string? mensajeError = null;
     private string? mensajeOk = null;
     private string? mensajeSaldo = null;
+    private bool editando = false;
+
+    private Movimiento? movimientoAEliminar = null;
+    private bool mostrarConfirmacion = false;
 
     protected override void OnInitialized()
     {
@@ -132,18 +178,66 @@ else
             await MostrarError("Ingrese un monto valido");
             return;
         }
-        var movimiento = new Movimiento
-            {
-                Id = movimientos.Count + 1,
-                Concepto = nuevoMovimiento.Concepto,
-                Monto = nuevoMovimiento.Monto,
-                Tipo = nuevoMovimiento.Tipo
-            };
-        Gestor.Agregar(movimiento);
-        movimientos = Gestor.ObtenerTodos();
-        await MostrarExito("Movimiento agregado correctamente");
-        nuevoMovimiento = new();
+        if (editando)
+        {
+            //Guardar edicion
+            Gestor.Editar(nuevoMovimiento);
+            await MostrarExito("Movimiento actualizado con exito");
+            editando = false;
+            nuevoMovimiento = new Movimiento();
+        }
+        else
+        {
+            var movimiento = new Movimiento
+                {
+                    Id = movimientos.Count + 1,
+                    Concepto = nuevoMovimiento.Concepto,
+                    Monto = nuevoMovimiento.Monto,
+                    Tipo = nuevoMovimiento.Tipo
+                };
+            Gestor.Agregar(movimiento);
+            movimientos = Gestor.ObtenerTodos();
+            await MostrarExito("Movimiento agregado correctamente");
+            nuevoMovimiento = new Movimiento();
+        }
     }
+    private void ConfirmarEliminar(Movimiento mov)
+    {
+        movimientoAEliminar = mov;
+        mostrarConfirmacion = true;
+    }
+
+    private async Task EliminarConfirmado()
+    {
+        if (movimientoAEliminar is null)
+            return;
+
+        Gestor.Eliminar(movimientoAEliminar.Id);
+        movimientos = Gestor.ObtenerTodos();
+
+        mostrarConfirmacion = false;
+        movimientoAEliminar = null;
+
+        await MostrarExito("Movimiento eliminado correctamente");
+    }
+    private async Task Editar(Movimiento mov)
+    {
+        editando = true;
+        nuevoMovimiento = new Movimiento
+            {
+                Id = mov.Id,
+                Concepto = mov.Concepto,
+                Monto = mov.Monto,
+                Tipo = mov.Tipo
+            };
+    }
+
+    private void CancelarEliminar()
+    {
+        mostrarConfirmacion = false;
+        movimientoAEliminar = null;
+    }
+
     private async Task MostrarExito(string mensaje)
     {
         mensajeOk = mensaje;
@@ -160,7 +254,7 @@ else
         mensajeError = mensaje;
         StateHasChanged();
         
-        await Task.Delay(5000); 
+        await Task.Delay(3000); 
         
         mensajeError = null;
         StateHasChanged();
@@ -171,7 +265,7 @@ else
         mensajeSaldo = titulo;
         StateHasChanged();
         
-        await Task.Delay(7000);
+        await Task.Delay(5000);
         
         mensajeSaldo = null;
         StateHasChanged();
