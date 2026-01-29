@@ -106,6 +106,7 @@ else
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
+                    <th>Id</th>
                     <th>Fecha</th>
                     <th>Concepto</th>
                     <th>Categoría</th>
@@ -118,7 +119,8 @@ else
                 @foreach (var mov in movimientos)
                 {
                     <tr>
-                        <td>@mov.Fecha.ToShortDateString()</td>
+                        <td>@mov.Id</td>
+                        <td>@mov.Fecha</td>
                         <td>@mov.Concepto</td>
                         <td><span class="badge bg-secondary">@mov.Categoria</span></td>
                         <td>
@@ -210,7 +212,6 @@ else
         {
             var movimiento = new Movimiento
             {
-                Id = 0, 
                 Concepto = nuevoMovimiento.Concepto,
                 Monto = nuevoMovimiento.Monto,
                 Tipo = nuevoMovimiento.Tipo,

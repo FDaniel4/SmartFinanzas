@@ -34,6 +34,6 @@ namespace SmartFinanzas.Modelos
         Deudas,
         Salud,
         Otros,
-        Ahorro // Para registrar movimientos hacia metas
+        Ahorro 
     }
 }
