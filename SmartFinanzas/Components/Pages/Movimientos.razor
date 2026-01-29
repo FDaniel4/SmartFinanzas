@@ -6,200 +6,244 @@
 <h3>Movimientos</h3>
 
 <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1050;">
-
-    @* --- TOAST DE ÉXITO --- *@
     @if (!string.IsNullOrEmpty(mensajeOk))
     {
-        <div class="toast show align-items-center text-white bg-success border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast show align-items-center text-white bg-success border-0 shadow">
             <div class="d-flex">
-                <div class="toast-body fs-6">
-                    <i class="bi bi-check-circle-fill me-2"></i> @mensajeOk
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="() => mensajeOk = null" aria-label="Close"></button>
+                <div class="toast-body fs-6"><i class="bi bi-check-circle-fill me-2"></i> @mensajeOk</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="() => mensajeOk = null"></button>
             </div>
         </div>
     }
-
-    @* --- TOAST DE ERROR --- *@
     @if (!string.IsNullOrEmpty(mensajeError))
     {
-        <div class="toast show align-items-center text-white bg-danger border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast show align-items-center text-white bg-danger border-0 shadow">
             <div class="d-flex">
-                <div class="toast-body fs-6">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i> @mensajeError
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="() => mensajeError = null" aria-label="Close"></button>
+                <div class="toast-body fs-6"><i class="bi bi-exclamation-triangle-fill me-2"></i> @mensajeError</div>
+                <button type="button" class="btn-close btn-close-white me-2 m-auto" @onclick="() => mensajeError = null"></button>
             </div>
         </div>
     }
-
-    @* --- TOAST DE SALDO (INFO) --- *@
     @if (!string.IsNullOrEmpty(mensajeSaldo))
     {
-        <div class="toast show border-0 shadow" role="alert" aria-live="assertive" aria-atomic="true">
+        <div class="toast show border-0 shadow">
             <div class="toast-header bg-primary text-white">
                 <i class="bi bi-wallet2 me-2"></i>
                 <strong class="me-auto">@mensajeSaldo</strong>
-                <button type="button" class="btn-close btn-close-white" @onclick="() => mensajeSaldo = null" aria-label="Close"></button>
+                <button type="button" class="btn-close btn-close-white" @onclick="() => mensajeSaldo = null"></button>
             </div>
             <div class="toast-body bg-light text-dark">
-                <div class="d-flex justify-content-between"><span>Gastos:</span> <strong>@Gestor.TotalGastos()</strong></div>
-                <div class="d-flex justify-content-between"><span>Ingresos:</span> <strong>@Gestor.TotalIngresos()</strong></div>
+                <div class="d-flex justify-content-between"><span>Gastos:</span> <strong>@Gestor.TotalGastos().ToString("C")</strong></div>
+                <div class="d-flex justify-content-between"><span>Ingresos:</span> <strong>@Gestor.TotalIngresos().ToString("C")</strong></div>
                 <hr class="my-1">
-                <div class="d-flex justify-content-between text-primary"><span>Total Saldo:</span> <strong>@Gestor.Saldo()</strong></div>
+                <div class="d-flex justify-content-between text-primary"><span>Total Saldo:</span> <strong>@Gestor.Saldo().ToString("C")</strong></div>
             </div>
         </div>
     }
-
 </div>
 
-<div class="card">
-    <div class="card-header">
-        <h4>@(editando ? "Modificar movimiento" : "Registrar movimiento")</h4>
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-light">
+        <h5 class="m-0">@(editando ? "Modificar movimiento" : "Registrar nuevo movimiento")</h5>
     </div>
     <div class="card-body">
-        <label class="form-label m-0">Concepto</label>
-        <input type="text" class="form-control mb-2" @bind-value=nuevoMovimiento.Concepto />
+        <div class="row">
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Fecha</label>
+                <input type="date" class="form-control" @bind-value=nuevoMovimiento.Fecha />
+            </div>
 
-        <label class="form-label m-0">Monto</label>
-        <input type="number" class="form-control mb-2" @bind-value=nuevoMovimiento.Monto />
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Tipo</label>
+                <select class="form-select" @bind=nuevoMovimiento.Tipo>
+                    <option value="@TipoMovimiento.Ingreso">Ingreso</option>
+                    <option value="@TipoMovimiento.Gasto">Gasto</option>
+                </select>
+            </div>
 
-        <label class="form-label m-0">Tipo</label>
-        <select class="form-select mb-2" @bind=nuevoMovimiento.Tipo>
-            <option value="Ingreso">Ingreso</option>
-            <option value="Gasto">Gasto</option>
-        </select>
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Categoría</label>
+                <select class="form-select" @bind="nuevoMovimiento.Categoria">
+                    @foreach (var cat in Enum.GetValues(typeof(Categoria)))
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                </select>
+            </div>
 
-        <button class="btn btn-primary" @onclick="Agregar">
-            @(editando ? "Guardar" : "Registrar")
-        </button>
+            <div class="col-md-6 mb-2">
+                <label class="form-label">Monto</label>
+                <input type="number" class="form-control" @bind-value=nuevoMovimiento.Monto />
+            </div>
+
+            <div class="col-12 mb-3">
+                <label class="form-label">Concepto / Descripción</label>
+                <input type="text" class="form-control" placeholder="Ej: Compra de despensa semanal" @bind-value=nuevoMovimiento.Concepto />
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            @if (editando)
+            {
+                <button class="btn btn-secondary me-md-2" @onclick="CancelarEdicion">Cancelar</button>
+            }
+            <button class="btn btn-primary px-4" @onclick="Agregar">
+                <i class="bi bi-save me-2"></i> @(editando ? "Guardar Cambios" : "Registrar")
+            </button>
+        </div>
     </div>
 </div>
-<hr />
+
 @if (movimientos.Count == 0)
 {
-    <p>Aun no hay movimientos registrados</p>
+    <div class="alert alert-info text-center">
+        Aun no hay movimientos registrados. ¡Agrega el primero!
+    </div>
 }
 else
 {
-    <table class="table table-responsive table-striped">
-        <thead>
-            <tr>
-                <th scope="col">Id</th>
-                <th scope="col">Concepto</th>
-                <th scope="col">Monto</th>
-                <th scope="col">Tipo</th>
-                <th scope="col">Acciones</th>
-
-            </tr>
-        </thead>
-        <tbody>
-            @foreach(var mov in movimientos)
-            {   
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
                 <tr>
-                    <td scope="row">@mov.Id</td>
-                    <td>@mov.Concepto</td>
-                    <td>@mov.Monto</td>
-                    <td>@mov.Tipo</td>
-                    <td>
-                        <div class="d-flex gap-2"><button class="btn btn-sm btn-danger" @onclick="() => ConfirmarEliminar(mov)"><i class="bi bi-trash"></i></button>
-                            <button class="btn btn-sm btn-warning" @onclick="() => Editar(mov)"><i class="bi bi-pencil-square"></i></button>
-                        </div>
-                    </td>
+                    <th>Fecha</th>
+                    <th>Concepto</th>
+                    <th>Categoría</th>
+                    <th>Tipo</th>
+                    <th class="text-end">Monto</th>
+                    <th class="text-center">Acciones</th>
                 </tr>
-            }
+            </thead>
+            <tbody>
+                @foreach (var mov in movimientos)
+                {
+                    <tr>
+                        <td>@mov.Fecha.ToShortDateString()</td>
+                        <td>@mov.Concepto</td>
+                        <td><span class="badge bg-secondary">@mov.Categoria</span></td>
+                        <td>
+                            <span class="badge @(mov.Tipo == TipoMovimiento.Ingreso ? "bg-success" : "bg-danger")">
+                                @mov.Tipo
+                            </span>
+                        </td>
+                        <td class="text-end fw-bold @(mov.Tipo == TipoMovimiento.Ingreso ? "text-success" : "text-danger")">
+                            @mov.Monto.ToString("C")
+                        </td>
+                        <td class="text-center">
+                            <button class="btn btn-sm btn-outline-primary me-1" @onclick="() => Editar(mov)" title="Editar">
+                                <i class="bi bi-pencil-square"></i>
+                            </button>
+                            <button class="btn btn-sm btn-outline-danger" @onclick="() => ConfirmarEliminar(mov)" title="Eliminar">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </td>
+                    </tr>
+                }
             </tbody>
-    </table>
-    <button class="btn btn-info" @onclick='async () => await MostrarSaldo("Balance Actual")'>
-        Ver mi Saldo
+        </table>
+    </div>
+
+    <button class="btn btn-info mt-3 text-white" @onclick='async () => await MostrarSaldo("Balance Actual")'>
+        <i class="bi bi-eye"></i> Ver mi Saldo
     </button>
+}
 
-    @if (mostrarConfirmacion)
-    {
-        <div class="modal fade show d-block" tabindex="-1">
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content shadow">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">Confirmar eliminación</h5>
-                    </div>
-
-                    <div class="modal-body">
-                        <p>
-                            ¿Seguro que deseas eliminar el movimiento
-                            <strong>@movimientoAEliminar?.Concepto</strong>?
-                        </p>
-                    </div>
-
-                    <div class="modal-footer">
-                        <button class="btn btn-secondary"
-                                @onclick="CancelarEliminar">
-                            Cancelar
-                        </button>
-
-                        <button class="btn btn-danger"
-                                @onclick="EliminarConfirmado">
-                            Sí, eliminar
-                        </button>
-                    </div>
+@if (mostrarConfirmacion)
+{
+    <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5)">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content shadow">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">Confirmar eliminación</h5>
+                    <button type="button" class="btn-close btn-close-white" @onclick="CancelarEliminar"></button>
+                </div>
+                <div class="modal-body">
+                    <p>¿Seguro que deseas eliminar el movimiento <strong>@movimientoAEliminar?.Concepto</strong>?</p>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" @onclick="CancelarEliminar">Cancelar</button>
+                    <button class="btn btn-danger" @onclick="EliminarConfirmado">Sí, eliminar</button>
                 </div>
             </div>
         </div>
-
-        <div class="modal-backdrop fade show"></div>
-    }
-
+    </div>
 }
 
 @code {
     private List<Movimiento> movimientos = new();
     private Movimiento nuevoMovimiento = new();
+
     private string? mensajeError = null;
     private string? mensajeOk = null;
     private string? mensajeSaldo = null;
     private bool editando = false;
-
     private Movimiento? movimientoAEliminar = null;
     private bool mostrarConfirmacion = false;
 
     protected override void OnInitialized()
     {
-        // Cargar la lista al iniciar la página para ver lo que tiene el servicio
         movimientos = Gestor.ObtenerTodos();
     }
+
     private async Task Agregar()
     {
-        if(string.IsNullOrWhiteSpace(nuevoMovimiento.Concepto))
+        if (string.IsNullOrWhiteSpace(nuevoMovimiento.Concepto))
         {
             await MostrarError("Escriba un concepto para la operación");
             return;
         }
         if (nuevoMovimiento.Monto <= 0)
         {
-            await MostrarError("Ingrese un monto valido");
+            await MostrarError("Ingrese un monto válido mayor a 0");
             return;
         }
+
         if (editando)
         {
-            //Guardar edicion
             Gestor.Editar(nuevoMovimiento);
-            await MostrarExito("Movimiento actualizado con exito");
+
+            await MostrarExito("Movimiento actualizado con éxito");
             editando = false;
-            nuevoMovimiento = new Movimiento();
+            nuevoMovimiento = new Movimiento(); 
         }
         else
         {
             var movimiento = new Movimiento
-                {
-                    Id = movimientos.Count + 1,
-                    Concepto = nuevoMovimiento.Concepto,
-                    Monto = nuevoMovimiento.Monto,
-                    Tipo = nuevoMovimiento.Tipo
-                };
+            {
+                Id = 0, 
+                Concepto = nuevoMovimiento.Concepto,
+                Monto = nuevoMovimiento.Monto,
+                Tipo = nuevoMovimiento.Tipo,
+                Categoria = nuevoMovimiento.Categoria, 
+                Fecha = nuevoMovimiento.Fecha         
+            };
+
             Gestor.Agregar(movimiento);
-            movimientos = Gestor.ObtenerTodos();
+            movimientos = Gestor.ObtenerTodos(); 
+
             await MostrarExito("Movimiento agregado correctamente");
-            nuevoMovimiento = new Movimiento();
+            nuevoMovimiento = new Movimiento(); 
         }
+    }
+
+    private async Task Editar(Movimiento mov)
+    {
+        editando = true;
+        nuevoMovimiento = new Movimiento
+        {
+            Id = mov.Id,
+            Concepto = mov.Concepto,
+            Monto = mov.Monto,
+            Tipo = mov.Tipo,
+            Categoria = mov.Categoria, 
+            Fecha = mov.Fecha          
+        };
+    }
+
+    private void CancelarEdicion()
+    {
+        editando = false;
+        nuevoMovimiento = new Movimiento();
     }
     private void ConfirmarEliminar(Movimiento mov)
     {
@@ -209,27 +253,13 @@ else
 
     private async Task EliminarConfirmado()
     {
-        if (movimientoAEliminar is null)
-            return;
+        if (movimientoAEliminar is null) return;
 
         Gestor.Eliminar(movimientoAEliminar.Id);
         movimientos = Gestor.ObtenerTodos();
-
         mostrarConfirmacion = false;
         movimientoAEliminar = null;
-
         await MostrarExito("Movimiento eliminado correctamente");
-    }
-    private async Task Editar(Movimiento mov)
-    {
-        editando = true;
-        nuevoMovimiento = new Movimiento
-            {
-                Id = mov.Id,
-                Concepto = mov.Concepto,
-                Monto = mov.Monto,
-                Tipo = mov.Tipo
-            };
     }
 
     private void CancelarEliminar()
@@ -238,14 +268,13 @@ else
         movimientoAEliminar = null;
     }
 
+    //TOASTS
     private async Task MostrarExito(string mensaje)
     {
         mensajeOk = mensaje;
-        StateHasChanged(); 
-        
+        StateHasChanged();
         await Task.Delay(3000);
-        
-        mensajeOk = null; 
+        mensajeOk = null;
         StateHasChanged();
     }
 
@@ -253,9 +282,7 @@ else
     {
         mensajeError = mensaje;
         StateHasChanged();
-        
-        await Task.Delay(3000); 
-        
+        await Task.Delay(3000);
         mensajeError = null;
         StateHasChanged();
     }
@@ -264,9 +291,7 @@ else
     {
         mensajeSaldo = titulo;
         StateHasChanged();
-        
         await Task.Delay(5000);
-        
         mensajeSaldo = null;
         StateHasChanged();
     }

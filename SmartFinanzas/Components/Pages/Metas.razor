@@ -1,0 +1,160 @@
+﻿@page "/metas"
+@using SmartFinanzas.Modelos
+@inject GestorMovimientos gestor
+@rendermode InteractiveServer
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Metas Financieras</h3>
+        <button class="btn btn-primary" @onclick="MostrarFormulario">
+            <i class="bi bi-plus-circle"></i> Nueva Meta
+        </button>
+    </div>
+
+    @if (mostrandoFormulario)
+    {
+        <div class="card mb-4 border-primary">
+            <div class="card-header bg-primary text-white">Definir Nueva Meta</div>
+            <div class="card-body">
+                <EditForm Model="nuevaMeta" OnValidSubmit="GuardarMeta">
+                    <DataAnnotationsValidator />
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Nombre de la Meta:</label>
+                            <InputText class="form-control" @bind-Value="nuevaMeta.Nombre" placeholder="Ej: Viaje a la playa" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Monto Objetivo ($):</label>
+                            <InputNumber class="form-control" @bind-Value="nuevaMeta.MontoObjetivo" />
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label>Fecha Límite:</label>
+                            <InputDate class="form-control" @bind-Value="nuevaMeta.FechaEstimada" />
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-success">Guardar Meta</button>
+                    <button type="button" class="btn btn-secondary" @onclick="OcultarFormulario">Cancelar</button>
+                </EditForm>
+            </div>
+        </div>
+    }
+
+    <div class="row">
+        @if (listaMetas.Count > 0)
+        {
+            @foreach (var meta in listaMetas)
+            {
+                <div class="col-md-6 mb-4">
+                    <div class="card shadow-sm">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between">
+                                <h5 class="card-title">@meta.Nombre</h5>
+                                <span class="badge bg-info text-dark">Faltan: @((meta.FechaEstimada - DateTime.Now).Days) días</span>
+                            </div>
+                            
+                            <h3 class="mt-2 text-center">
+                                @meta.MontoAhorrado.ToString("C") <small class="text-muted text-small">/ @meta.MontoObjetivo.ToString("C")</small>
+                            </h3>
+
+                            <div class="progress mt-3 mb-2" style="height: 25px;">
+                                <div class="progress-bar @ObtenerColorBarra(meta.Progreso)" 
+                                     role="progressbar" 
+                                     style="width: @meta.Progreso%"
+                                     aria-valuenow="@meta.Progreso"
+                                     aria-valuemin="0" 
+                                     aria-valuemax="100">
+                                    @Math.Round(meta.Progreso)%
+                                </div>
+                            </div>
+
+                            <div class="d-flex justify-content-between mt-3">
+                                <div class="input-group input-group-sm" style="max-width: 200px;">
+                                    <input type="number" class="form-control" placeholder="Monto" @bind="montosAbono[meta.Id]" />
+                                    <button class="btn btn-outline-success" @onclick="() => Abonar(meta.Id)">
+                                        <i class="bi bi-piggy-bank"></i> Abonar
+                                    </button>
+                                </div>
+
+                                <button class="btn btn-outline-danger btn-sm" @onclick="() => Eliminar(meta.Id)">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center text-muted py-5">
+                <i class="bi bi-flag display-1"></i>
+                <p class="mt-3">No tienes metas activas. ¡Crea una para empezar a ahorrar!</p>
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Meta> listaMetas = new List<Meta>();
+    private Meta nuevaMeta = new Meta();
+    private bool mostrandoFormulario = false;
+    
+    private Dictionary<int, decimal> montosAbono = new Dictionary<int, decimal>();
+
+    protected override void OnInitialized()
+    {
+        CargarMetas();
+    }
+
+    private void CargarMetas()
+    {
+        listaMetas = gestor.ObtenerMetas();
+        foreach(var m in listaMetas)
+        {
+            if(!montosAbono.ContainsKey(m.Id)) montosAbono.Add(m.Id, 0);
+        }
+    }
+
+    private void MostrarFormulario() 
+    {
+        nuevaMeta = new Meta { FechaEstimada = DateTime.Now.AddMonths(1) };
+        mostrandoFormulario = true;
+    }
+
+    private void OcultarFormulario() => mostrandoFormulario = false;
+
+    private void GuardarMeta()
+    {
+        gestor.AgregarMeta(nuevaMeta);
+        mostrandoFormulario = false;
+        CargarMetas();
+    }
+
+    private void Eliminar(int id)
+    {
+        gestor.EliminarMeta(id);
+        CargarMetas();
+    }
+
+    private void Abonar(int idMeta)
+    {
+        if (montosAbono.TryGetValue(idMeta, out decimal monto) && monto > 0)
+        {
+            var meta = listaMetas.FirstOrDefault(m => m.Id == idMeta);
+            if (meta != null)
+            {
+                meta.MontoAhorrado += monto;
+                gestor.Agregar(new Movimiento { Concepto = $"Ahorro para {meta.Nombre}", Monto = monto, Tipo = TipoMovimiento.Gasto, Categoria = Categoria.Ahorro });
+
+                montosAbono[idMeta] = 0; 
+            }
+        }
+    }
+
+    private string ObtenerColorBarra(double porcentaje)
+    {
+        if (porcentaje < 25) return "bg-danger";
+        if (porcentaje < 75) return "bg-warning";
+        return "bg-success";
+    }
+}

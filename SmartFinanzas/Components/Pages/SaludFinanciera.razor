@@ -1,0 +1,259 @@
+﻿@page "/dashboard"
+@using SmartFinanzas.Modelos
+@inject GestorMovimientos gestor
+@rendermode InteractiveServer
+
+<div class="container mt-4">
+    <h3>Dashboard Financiero</h3>
+    <p class="text-muted">Controla, ahorra e invierte</p>
+
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-white bg-success mb-3">
+                <div class="card-header">Ingresos Totales</div>
+                <div class="card-body">
+                    <h2 class="card-title">@ingresos.ToString("C")</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white bg-danger mb-3">
+                <div class="card-header">Gastos Totales</div>
+                <div class="card-body">
+                    <h2 class="card-title">@gastos.ToString("C")</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-white @(saldo >= 0 ? "bg-primary" : "bg-warning") mb-3">
+                <div class="card-header">Saldo (Ahorro)</div>
+                <div class="card-body">
+                    <h2 class="card-title">@saldo.ToString("C")</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-info">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="card-title m-0">💰 Control de Presupuesto Mensual</h5>
+                        <button class="btn btn-sm btn-outline-primary" @onclick="CambiarPresupuesto">
+                            <i class="bi bi-pencil"></i> Definir Límite
+                        </button>
+                    </div>
+
+                    @if (presupuesto > 0)
+                    {
+                        var porcentajeGasto = (gastos / presupuesto) * 100;
+                        var colorBarra = porcentajeGasto > 100 ? "bg-danger" : (porcentajeGasto > 80 ? "bg-warning" : "bg-success");
+
+                        // ALERTA VISUAL (Requerimiento Imagen 2)
+                        @if (alertaPresupuesto)
+                        {
+                            <div class="alert alert-danger d-flex align-items-center" role="alert">
+                                <i class="bi bi-exclamation-triangle-fill flex-shrink-0 me-2"></i>
+                                <div>
+                                    <strong>¡Cuidado!</strong> Has excedido tu presupuesto mensual de @presupuesto.ToString("C").
+                                </div>
+                            </div>
+                        }
+
+                        <p class="mb-1">Has gastado <strong>@gastos.ToString("C")</strong> de tu límite de <strong>@presupuesto.ToString("C")</strong></p>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar @colorBarra progress-bar-striped progress-bar-animated"
+                                 role="progressbar"
+                                 style="width: @(Math.Min(porcentajeGasto, 100))%">
+                                @Math.Round(porcentajeGasto)%
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <p class="text-muted">No has definido un límite de gastos mensual. ¡Define uno para recibir alertas!</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (mostrarModalPresupuesto)
+    {
+        <div class="modal fade show d-block" style="background: rgba(0,0,0,0.5)">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Definir Límite de Gastos</h5>
+                        <button type="button" class="btn-close" @onclick="() => mostrarModalPresupuesto = false"></button>
+                    </div>
+                    <div class="modal-body">
+                        <label>Monto máximo a gastar por mes:</label>
+                        <input type="number" class="form-control" @bind="nuevoPresupuesto" />
+                    </div>
+                    <div class="modal-footer">
+                        <button class="btn btn-primary" @onclick="GuardarPresupuesto">Guardar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <strong>Salud Financiera</strong>
+                </div>
+                <div class="card-body text-center d-flex flex-column justify-content-center">
+
+                    @if (estadoSalud.Contains("Bueno"))
+                    {
+                        <div class="alert alert-success display-4">
+                            <i class="bi bi-emoji-smile"></i> @estadoSalud
+                        </div>
+                    }
+                    else if (estadoSalud.Contains("Regular"))
+                    {
+                        <div class="alert alert-warning display-4">
+                            <i class="bi bi-emoji-neutral"></i> @estadoSalud
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-danger display-4">
+                            <i class="bi bi-emoji-frown"></i> @estadoSalud
+                        </div>
+                    }
+                    <p class="text-muted mt-2">
+                        El sistema analiza tu porcentaje de ahorro respecto a tus ingresos.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-header bg-light">
+                    <strong>Sugerencia Inteligente (Basado en Saldo)</strong>
+                </div>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Inversión (20%)</strong>
+                            <small class="d-block text-muted">Fondos, Acciones, Cetes</small>
+                        </div>
+                        <span class="badge bg-success rounded-pill">@sugerencias.Inversion.ToString("C")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Gustos Personales (30%)</strong>
+                            <small class="d-block text-muted">Salidas, Caprichos</small>
+                        </div>
+                        <span class="badge bg-info rounded-pill">@sugerencias.Gustos.ToString("C")</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        <div>
+                            <strong>Nivel Endeudamiento / Otros (50%)</strong>
+                            <small class="d-block text-muted">Pagos fijos, Deudas</small>
+                        </div>
+                        <span class="badge bg-secondary rounded-pill">@sugerencias.EndeudamientoPosible.ToString("C")</span>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <strong>Distribución de Gastos por Categoría</strong>
+                </div>
+                <div class="card-body">
+                    @if (gastosPorCategoria.Count > 0)
+                    {
+                        foreach (var item in gastosPorCategoria)
+                        {
+                            // Calculamos el porcentaje visual
+                            var porcentaje = (double)(item.Value / (gastos == 0 ? 1 : gastos)) * 100;
+
+                            <div class="mb-3">
+                                <div class="d-flex justify-content-between">
+                                    <span>@item.Key</span>
+                                    <span>@item.Value.ToString("C") (@Math.Round(porcentaje, 1)%)</span>
+                                </div>
+                                <div class="progress">
+                                    <div class="progress-bar" role="progressbar"
+                                         style="width: @porcentaje%"
+                                         aria-valuenow="@porcentaje" aria-valuemin="0" aria-valuemax="100">
+                                    </div>
+                                </div>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted text-center">No hay gastos registrados aún.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Variables para almacenar los datos
+    private decimal ingresos;
+    private decimal gastos;
+    private decimal saldo;
+    private string estadoSalud = "";
+    private (decimal Inversion, decimal Gustos, decimal EndeudamientoPosible) sugerencias;
+    private Dictionary<string, decimal> gastosPorCategoria = new Dictionary<string, decimal>();
+
+    private decimal presupuesto;
+    private bool alertaPresupuesto;
+    private bool mostrarModalPresupuesto = false;
+    private decimal nuevoPresupuesto;
+
+    // Este método se ejecuta cuando carga la página
+    protected override void OnInitialized()
+    {
+        CargarDatos();
+    }
+
+    private void CargarDatos()
+    {
+        // 1. Obtenemos los totales básicos
+        ingresos = gestor.TotalIngresos();
+        gastos = gestor.TotalGastos();
+        saldo = gestor.Saldo();
+
+        // 2. Obtenemos el análisis del semáforo
+        estadoSalud = gestor.ObtenerEstadoSalud();
+
+        // 3. Obtenemos las sugerencias (Tupla)
+        sugerencias = gestor.ObtenerSugerenciasDistribucion();
+
+        // 4. Obtenemos el desglose para "graficar"
+        gastosPorCategoria = gestor.ObtenerGastosPorCategoria();
+
+        presupuesto = gestor.ObtenerPresupuesto();
+        alertaPresupuesto = gestor.VerificarAlertaPresupuesto();
+    }
+    private void CambiarPresupuesto()
+    {
+        nuevoPresupuesto = presupuesto; // Cargar valor actual
+        mostrarModalPresupuesto = true;
+    }
+
+    private void GuardarPresupuesto()
+    {
+        gestor.EstablecerPresupuesto(nuevoPresupuesto);
+        mostrarModalPresupuesto = false;
+        CargarDatos(); // Recargar para ver la barra nueva
+    }
+    
+}
