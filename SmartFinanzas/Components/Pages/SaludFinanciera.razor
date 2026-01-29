@@ -39,7 +39,7 @@
             <div class="card border-info">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-2">
-                        <h5 class="card-title m-0">💰 Control de Presupuesto Mensual</h5>
+                        <h5 class="card-title m-0">Control de Presupuesto Mensual</h5>
                         <button class="btn btn-sm btn-outline-primary" @onclick="CambiarPresupuesto">
                             <i class="bi bi-pencil"></i> Definir Límite
                         </button>
@@ -175,15 +175,14 @@
                 <div class="card-body">
                     @if (gastosPorCategoria.Count > 0)
                     {
-                        foreach (var item in gastosPorCategoria)
+                        foreach (var gasto in gastosPorCategoria)
                         {
-                            // Calculamos el porcentaje visual
-                            var porcentaje = (double)(item.Value / (gastos == 0 ? 1 : gastos)) * 100;
+                            var porcentaje = (double)(gasto.Value / (gastos == 0 ? 1 : gastos)) * 100;
 
                             <div class="mb-3">
                                 <div class="d-flex justify-content-between">
-                                    <span>@item.Key</span>
-                                    <span>@item.Value.ToString("C") (@Math.Round(porcentaje, 1)%)</span>
+                                    <span>@gasto.Key</span>
+                                    <span>@gasto.Value.ToString("C") (@Math.Round(porcentaje, 1)%)</span>
                                 </div>
                                 <div class="progress">
                                     <div class="progress-bar" role="progressbar"
@@ -205,7 +204,6 @@
 </div>
 
 @code {
-    // Variables para almacenar los datos
     private decimal ingresos;
     private decimal gastos;
     private decimal saldo;
@@ -218,7 +216,6 @@
     private bool mostrarModalPresupuesto = false;
     private decimal nuevoPresupuesto;
 
-    // Este método se ejecuta cuando carga la página
     protected override void OnInitialized()
     {
         CargarDatos();
@@ -226,18 +223,14 @@
 
     private void CargarDatos()
     {
-        // 1. Obtenemos los totales básicos
         ingresos = gestor.TotalIngresos();
         gastos = gestor.TotalGastos();
         saldo = gestor.Saldo();
 
-        // 2. Obtenemos el análisis del semáforo
         estadoSalud = gestor.ObtenerEstadoSalud();
 
-        // 3. Obtenemos las sugerencias (Tupla)
         sugerencias = gestor.ObtenerSugerenciasDistribucion();
 
-        // 4. Obtenemos el desglose para "graficar"
         gastosPorCategoria = gestor.ObtenerGastosPorCategoria();
 
         presupuesto = gestor.ObtenerPresupuesto();
@@ -245,7 +238,7 @@
     }
     private void CambiarPresupuesto()
     {
-        nuevoPresupuesto = presupuesto; // Cargar valor actual
+        nuevoPresupuesto = presupuesto;
         mostrarModalPresupuesto = true;
     }
 
@@ -253,7 +246,7 @@
     {
         gestor.EstablecerPresupuesto(nuevoPresupuesto);
         mostrarModalPresupuesto = false;
-        CargarDatos(); // Recargar para ver la barra nueva
+        CargarDatos();
     }
     
 }

@@ -128,13 +128,11 @@ namespace SmartFinanzas
                 return "Malo (Ahorro crítico)";
         }
 
-        // Sugerencia de Inversión (Imagen 1 Punto 2)
         // Retorna un objeto con los montos sugeridos basados en el Saldo disponible
         public (decimal Inversion, decimal Gustos, decimal EndeudamientoPosible) ObtenerSugerenciasDistribucion()
         {
             decimal saldoActual = Saldo();
 
-            // Si no hay saldo positivo, no podemos sugerir inversión
             if (saldoActual <= 0) return (0, 0, 0);
 
             // Reglas: 20% Inversión, 30% Gustos, Resto (50%) Endeudamiento/Otros
@@ -160,7 +158,7 @@ namespace SmartFinanzas
         //retorna true si hay alerta
         public bool VerificarAlertaPresupuesto()
         {
-            if (_presupuestoMensual <= 0) return false; // Si no hay presupuesto, no hay alerta
+            if (_presupuestoMensual <= 0) return false; 
             return TotalGastos() > _presupuestoMensual;
         }
     }
